@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+  
+<h2>1</h2>
+    <details>
+      <summary>Crea una funció anomenada DEU_Q, que traga els números del 1 al 10 i els seus quadrats. (Utilitza RAISE NOTICE)</summary>
+      <code>
+CREATE OR REPLACE FUNCTION DEU_Q() RETURNS VOID AS $$
+DECLARE
+    i INTEGER := 1;
+BEGIN
+    WHILE i <= 10 LOOP
+        RAISE NOTICE 'Número: %, Quadrat: %', i, i * i;
+        i := i + 1;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+      </code>
+    </details>
+  
+  <h2>2</h2>
+    <details>
+      <summary>Fes una altra funció, IMP, que traga per pantalla els números imparells del 1 al 50. (Utilitza RAISE NOTICE).</summary>
+      <code>
+CREATE OR REPLACE FUNCTION IMP() RETURNS VOID AS $$
+DECLARE
+    i INT := 1;
+BEGIN
+    WHILE i <= 50 LOOP
+        RAISE NOTICE '%', i;
+        i := i + 2;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+      </code>
+    </details>
+  
+    <h2>3</h2>
+    <details>
+      <summary>Fes una funció anomenada TAULA_MULT, per a que traga la taula de multiplicar del paràmetre que se li ha de passar. (Utilitza RAISE NOTICE). Aquest podria ser el seu aspecte, en executar-la:</summary>
+      <code>
+CREATE OR REPLACE FUNCTION TAULA_MULT(num INTEGER)
+RETURNS VOID AS $$
+DECLARE
+    i INTEGER := 1;
+BEGIN
+    RAISE NOTICE 'Taula de multiplicar de %:', num;
+    WHILE i <= 10 LOOP
+        RAISE NOTICE '% x % = %', num, i, num*i;
+        i := i + 1;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+      </code>
+    </details>
+    
+    
+      <h2>4</h2>
+    <details>
+      <summary>Fes una funció, anomenada MAX2, que tinga dos paràmetres numèrics i que torne el màxim entre aquestos dos. (Ara ja no s'ha d'utilitzar RAISE NOTICE).</summary>
+      <code>
+CREATE OR REPLACE FUNCTION MAX2(num1 NUMERIC, num2 NUMERIC) 
+RETURNS NUMERIC AS $$
+BEGIN
+    IF num1 > num2 THEN
+        RETURN num1;
+    ELSE
+        RETURN num2;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+      </code>
+    </details>
+    
+    
+      <h2>5</h2>
+    <details>
+      <summary>Utilitza l'anterior per a crear MAX3. Has d'utilitzar obligatòriament la funció MAX2</summary>
+      <code>
+CREATE OR REPLACE FUNCTION MAX3(num1 NUMERIC, num2 NUMERIC, num3 NUMERIC) 
+RETURNS NUMERIC AS $$
+BEGIN
+  RETURN MAX2(MAX2(num1, num2), num3);
+END;
+$$ LANGUAGE plpgsql;
+      </code>
+    </details>
+  
+  
+        <h2>6</h2>
+    <details>
+      <summary>Fes una funció anomeneda POBLACIONS_ALTES que accepte 2 paràmetres, el primer de tipus text que serà una comarca, i el segon numèric que serà una altura. Ha de traure les poblacions de la comarca del primer paràmetre que són més altes que el segon paràmetre. Mostrarem el nom de la població i l'altura. Aquest podria ser el resultat en executar-se:</summary>
+      <code>
+CREATE OR REPLACE FUNCTION POBLACIONS_ALTES(
+    p_comarca text,
+    p_altura numeric
+) RETURNS TABLE (nom text, altura numeric) AS $$
+BEGIN
+    RETURN QUERY SELECT POBLACIONES.nom, POBLACIONES.altura
+    FROM POBLACIONES
+    JOIN MUNICIPIOS ON MUNICIPIOS.id = POBLACIONES.municipio_id
+    JOIN COMARCAS ON COMARCAS.id = MUNICIPIOS.comarca_id
+    WHERE COMARCAS.nom = p_comarca AND POBLACIONES.altura > p_altura;
+END;
+$$ LANGUAGE plpgsql;
+-----------
+SELECT * FROM POBLACIONS_ALTES('Alt Maestrat', 500);
+      </code>
+    </details>
+    
+    
+    
+          <h2>7</h2>
+    <details>
+      <summary>(Voluntari) Fes la funció LAT_A_TEXT, tenint en compte que ha de quedar com en la taula POBLACIONS. Segurament la dificultat més gran serà aconseguir que apareguen les cometes després dels minuts i dels segons.</summary>
+      <code>
+CREATE OR REPLACE FUNCTION LAT_A_TEXT(lat decimal) RETURNS text AS $$
+DECLARE
+  graus integer;
+  minuts integer;
+  segons integer;
+  orientacio text;
+BEGIN
+  IF lat < 0 THEN
+    lat := -lat;
+    orientacio := 'S';
+  ELSE
+    orientacio := 'N';
+  END IF;
+
+  graus := floor(lat);
+  lat := (lat - graus) * 60;
+  minuts := floor(lat);
+  lat := (lat - minuts) * 60;
+  segons := round(lat);
+
+  RETURN graus || 'º' || lpad(minuts::text, 2, '0') || '''' || lpad(segons::text, 2, '0') || '″' || orientacio;
+END;
+$$ LANGUAGE plpgsql;
+
+      </code>
+    </details>
+  
+  
+  
+  
+  
+  
+  <hr/>
+    <h2>Ejercicio 1</h2>
+    <details>
+      <summary>Fes una funció que donat el nom d’una població i una comarca ens permeta establir la llengua per eixa població (amb cursor implícit).</summary>
+      <code>
+        CREATE OR REPLACE FUNCTION SET_LLENGUA(poblacio_nom TEXT, comarca_nom TEXT, llengua CHAR) RETURNS VOID AS $$
+        DECLARE
+          poblacio RECORD;
+        BEGIN
+          SELECT p.* INTO poblacio
+          FROM poblacions AS p
+          JOIN comarques AS c ON p.provincia = c.provincia
+          WHERE p.nom = poblacio_nom AND c.nom_c = comarca_nom;
+         
+          IF NOT FOUND THEN
+            RAISE EXCEPTION 'Població o comarca no trobada';
+          END IF;
+        
+          UPDATE poblacions SET llengua = llengua WHERE cod_m = poblacio.cod_m;
+        
+          RETURN;
+        END;
+        $$ LANGUAGE plpgsql;
+      </code>
+    </details>
+    <h2>Ejercicio 2</h2>
+    <details>
+      <summary>Fes una funció en PL/pgSQL anomenada DENSITAT_CENTRES que donat el nom d'una comarca ens torne la quantitat de centres que té per unitat de superfície (amb cursor implícit).</summary>
+      <code>
+        CREATE OR REPLACE FUNCTION DENSITAT_CENTRES(p_nom_c VARCHAR) RETURNS FLOAT AS $$
+        DECLARE
+            comarca_id INTEGER;
+            superficie FLOAT;
+            quantitat_centres INTEGER;
+            densitat FLOAT;
+        BEGIN
+            SELECT id, superficie INTO comarca_id, superficie
+            FROM comarques
+            WHERE nom_c = p_nom_c;
+        
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'Comarca no trobada: %', p_nom_c;
+            END IF;
+        
+            SELECT COUNT(*) INTO v_quantitat_centres
+            FROM centres
+            WHERE comarca_id = v_comarca_id;
+        
+            
+            v_densitat := quantitat_centres / superficie;
+        
+            RETURN densitat;
+        END;
+        $$ LANGUAGE plpgsql;
+      </code>
+    </details>
+    <h2>Ejercicio 3</h2>
+    <details>
+      <summary>La mateixa funció del exercici 2 però amb cursor explícit.</summary>
+      <code>
+        CREATE OR REPLACE FUNCTION DENSITAT_CENTRES(p_nom_c VARCHAR)
+        RETURNS FLOAT AS $$
+        DECLARE
+            comarca_id INTEGER;
+            superficie FLOAT;
+            quantitat_centres INTEGER := 0;
+            densitat FLOAT;
+            cur_centres CURSOR FOR
+                SELECT c.id
+                FROM centres c
+                JOIN comarques cm ON c.comarca_id = cm.id
+                WHERE cm.nom_c = p_nom_c;
+            centre_id INTEGER;
+        BEGIN
+        
+            SELECT id, superficie INTO comarca_id, superficie
+            FROM comarques
+            WHERE nom_c = p_nom_c;
+        
+            
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'Comarca no trobada: %', p_nom_c;
+            END IF;
+        
+            OPEN cur_centres;
+        
+           
+            LOOP
+                FETCH cur_centres INTO centre_id;
+                EXIT WHEN NOT FOUND;
+                quantitat_centres := quantitat_centres + 1;
+            END LOOP;
+        
+            CLOSE cur_centres;
+        
+            densitat := quantitat_centres / superficie;
+        
+            RETURN densitat;
+        END;
+        $$ LANGUAGE plpgsql;
+      </code>
+    </details>
+    <h2>Ejercicio 4</h2>
+    <details>
+      <summary>Fent ús d’almenys un cursor explícit fes una funció que ens permeta obtindre l’altura mitja a la que estan els centres en funció de la comarca i de la llengua de la població (aquest seran els paràmetres d’entrada).</summary>
+      <code>
+        CREATE OR REPLACE FUNCTION ALTURA_MITJA_CENTRES(p_nom_c VARCHAR, p_llengua BPCHAR(1))
+        RETURNS FLOAT AS $$
+        DECLARE
+            altura_total FLOAT := 0;
+            quantitat_centres INTEGER := 0;
+            altura_mitja FLOAT;
+            cur_centres CURSOR FOR
+                SELECT p.altura
+                FROM centres c
+                JOIN poblacions p ON c.poblacio_id = p.cod_m
+                WHERE p.nom_c = p_nom_c AND p.llengua = p_llengua;
+            altura_actual FLOAT;
+        BEGIN
+            
+            OPEN cur_centres;
+        
+            LOOP
+                FETCH cur_centres INTO altura_actual;
+        
+                EXIT WHEN NOT FOUND;
+        
+                altura_total := altura_total + altura_actual;
+                quantitat_centres := quantitat_centres + 1;
+            END LOOP;
+        
+            CLOSE cur_centres;
+        
+            
+            IF quantitat_centres = 0 THEN
+                RAISE EXCEPTION 'No s''han trobat centres per a la comarca: % i llengua: %', p_nom_c, p_llengua;
+            END IF;
+        
+            
+            altura_mitja := altura_total / quantitat_centres;
+        
+            RETURN altura_mitja;
+        END;
+        $$ LANGUAGE plpgsql;
+      </code>
+    </details>
+    <h2>Ejercicio 5</h2>
+    <details>
+      <summary>Crear un trigger que ens avise quan una població cambia de llengua majoritària.</summary>
+      <code>
+        CREATE OR REPLACE FUNCTION llengua_majoritaria_cambi()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            IF NEW.llengua <> OLD.llengua THEN
+                RAISE NOTICE 'La població % ha canviat de llengua majoritària de % a %', NEW.nom, OLD.llengua, NEW.llengua;
+            END IF;
+        
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+        
+        CREATE TRIGGER llengua_majoritaria_cambi_trigger
+        BEFORE UPDATE OF llengua ON poblacions
+        FOR EACH ROW
+        EXECUTE PROCEDURE llengua_majoritaria_cambi();
+      </code>
+    </details>
+    <h2>Ejercicio 6</h2>
+    <details>
+      <summary>Fent ús de cursors fes una funció en PL/pgSQL anomenada POBLACIONS_GRANS que donat el nom d'una comarca ens torne els noms de les poblacions de la comarca que tenen una població superior en un 50% a la mitjana de població de la provincia.</summary>
+      <code>
+        CREATE OR REPLACE FUNCTION POBLACIONS_GRANS(p_nom_c VARCHAR)
+        RETURNS TABLE(nom_poblacio VARCHAR) AS $$
+        DECLARE
+            poblacio_mitjana_provincia FLOAT;
+            cur_poblacions_grans CURSOR FOR
+                SELECT p.nom, p.poblacio
+                FROM poblacions p
+                WHERE p.nom_c = p_nom_c;
+            nom_actual VARCHAR;
+            poblacio_actual INTEGER;
+        
+        BEGIN
+            
+            SELECT AVG(poblacio) INTO poblacio_mitjana_provincia
+            FROM poblacions;
+        
+            OPEN cur_poblacions_grans;
+        
+            LOOP
+                FETCH cur_poblacions_grans INTO nom_actual, poblacio_actual;
+        
+                EXIT WHEN NOT FOUND;
+        
+                IF poblacio_actual > poblacio_mitjana_provincia * 1.5 THEN
+                    nom_poblacio := nom_actual;
+                    RETURN NEXT;
+                END IF;
+            END LOOP;
+        
+            CLOSE cur_poblacions_grans;
+        END;
+        $$ LANGUAGE plpgsql;
+      </code>
+    </details>
+    <h2>Ejercicio 7</h2>
+    <details>
+      <summary>Fent ús de cursors fes una funció en PL/pgSQL anomenada CENTRES_DUO que donat el nom d'una comarca ens torne la quantitat total de centres (suma) de les dos poblacions amb major número d'habitants.</summary>
+      <code>
+        CREATE OR REPLACE FUNCTION CENTRES_DUO(p_nom_c VARCHAR)
+        RETURNS INTEGER AS $$
+        DECLARE
+            poblacio_id1 INTEGER;
+            poblacio_id2 INTEGER;
+            quantitat_centres INTEGER := 0;
+            cur_centres CURSOR FOR
+                SELECT c.id
+                FROM centres c
+                WHERE c.poblacio_id IN (poblacio_id1, poblacio_id2);
+            centre_id INTEGER;
+        BEGIN
+            
+            SELECT cod_m INTO poblacio_id1
+            FROM poblacions
+            WHERE nom_c = p_nom_c
+            ORDER BY poblacio DESC
+            LIMIT 1
+            OFFSET 0;
+        
+            SELECT cod_m INTO poblacio_id2
+            FROM poblacions
+            WHERE nom_c = p_nom_c AND cod_m <> poblacio_id1
+            ORDER BY poblacio DESC
+            LIMIT 1
+            OFFSET 0;
+        
+            IF poblacio_id1 IS NULL OR poblacio_id2 IS NULL THEN
+                RAISE EXCEPTION 'No s''han trobat suficients poblacions per a la comarca: %', p_nom_c;
+            END IF;
+            OPEN cur_centres;
+            LOOP
+                FETCH cur_centres INTO centre_id;
+                EXIT WHEN NOT FOUND;
+                quantitat_centres := quantitat_centres + 1;
+            END LOOP;
+        
+            CLOSE cur_centres;
+        
+            RETURN quantitat_centres;
+        END;
+        $$ LANGUAGE plpgsql;
+      </code>
+    </details>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <h2>Ejercicio 12</h2>
+    <details>
+      <summary>Crear un trigger anomenat TR_ALT_POS que controle que l'altura d'una nova població siga estrictament positiva. La funció en la qual es basa es pot anomenar ALT_POS.</summary>
+      <code>
+CREATE OR REPLACE FUNCTION ALT_POS() RETURNS TRIGGER AS $cos$
+BEGIN
+IF NEW.altura <= 0 THEN
+RAISE EXCEPTION 'La altura de la población debe ser estrictamente positiva';
+END IF;
+RETURN NEW;
+END;
+$cos$ LANGUAGE plpgsql;
+CREATE TRIGGER TR_ALT_POS
+BEFORE INSERT ON POBLACIONES
+FOR EACH ROW
+EXECUTE PROCEDURE ALT_POS();
+      </code>
+    </details>
+    
+    
+    
+        <h2>Ejercicio 13</h2>
+    <details>
+      <summary>Modificar l'anterior per a que ho controle també quan es tracta d'una modificació.</summary>
+      <code>
+CREATE OR REPLACE FUNCTION ALT_POS() RETURNS TRIGGER AS $cos$
+BEGIN
+IF NEW.altura <= 0 THEN
+RAISE EXCEPTION 'La altura de la población debe ser estrictamente positiva';
+END IF;
+RETURN NEW;
+END;
+$cos$ LANGUAGE plpgsql;
+CREATE TRIGGER TR_ALT_POS
+BEFORE INSERT OR UPDATE ON POBLACIONES
+FOR EACH ROW
+EXECUTE PROCEDURE ALT_POS();
+      </code>
+    </details>
+    
+        <h2>Ejercicio 14</h2>
+    <details>
+      <summary>Crear un trigger anomenat TR_EXT_0_1000 que controle que l'extensió d'un municipi (població) estiga obligatòriament entre 0 i 1000, i ha de ser sempre, tant si s'insereix una nova població com si es modifica. Però en aquesta ocasió, en compte de traure un error, el que farem serà modificar aquest valor: si és major que 1000, li donarem el valor 1000, i si és negatiu li posarem 0. Ho aconseguirem modificant NEW.extensio, i com la funció del trigger torna sempre NEW, doncs agafarà el nou valor. Anomeneu a la funció EXT_0_1000. </summary>
+      <code>
+CREATE OR REPLACE FUNCTION EXT_0_1000() RETURNS TRIGGER AS $cos$
+BEGIN
+IF NEW.extensio < 0 THEN
+NEW.extensio := 0;
+ELSIF NEW.extensio > 1000 THEN
+NEW.extensio := 1000;
+END IF;
+RETURN NEW;
+END;
+$cos$ LANGUAGE plpgsql;
+CREATE TRIGGER TR_EXT_0_1000
+BEFORE INSERT OR UPDATE ON POBLACIONES
+FOR EACH ROW
+EXECUTE PROCEDURE EXT_0_1000();
+      </code>
+    </details>
+    
+    
+        <h2>Ejercicio 15</h2>
+    <details>
+      <summary>VOLUNTARI. En la taula POBLACIONS3 tenim controlat que la latitud introduïda siga correcta per mig del tipus lat, però no en la taula POBLACIONS, on és de tipus VARCHAR(50) i per tant es podria introduir una latitud incorrecta molt fàcilment. Crea un trigger que controle que quan s'introdueix o es modifica la latitud de POBLACIONS siga correcta. Per a això</summary>
+      <code>
+CREATE FUNCTION comprobar_latitud() RETURNS TRIGGER AS $cos$
+BEGIN
+IF NOT (
+NEW.latitud SIMILAR TO '(0[0-9]|[1-8][0-9]|90)º[0-5][0-9]''[0-5][0-9]"[NS]'
+) THEN
+RAISE EXCEPTION 'La latitud debe estar entre 00 º 00 '' 00 " N y 90 º 00 '' 00 " N, o
+entre 00 º 00 '' 00 " S y 90 º 00 '' 00 " S';
+END IF;
+RETURN NEW;
+END;
+$cos$ LANGUAGE plpgsql;
+CREATE TRIGGER comprobar_latitud BEFORE INSERT OR UPDATE ON POBLACIONES
+FOR EACH ROW
+EXECUTE PROCEDURE comprobar_latitud();
+      </code>
+    </details>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  </body>
+</html>
